@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casos Críticos — Oficina Goiânia</title>
+<style>
+  :root{
+    --bg:#14171c; --panel:#1b1f26; --panel2:#22272f; --border:#2c313a;
+    --text:#e8eaed; --muted:#8b93a1; --amber:#ffb020; --red:#e6483c;
+    --blue:#3b82c4; --green:#3fae6a; --shadow:0 8px 24px rgba(0,0,0,.35);
+    --age1:#ffd60a; --age2:#ff8c42; --age3:#a855f7; --age4:#ef4444;
+  }
+  [data-theme="light"]{
+    --bg:#f4f5f7; --panel:#ffffff; --panel2:#eef0f3; --border:#dde1e6;
+    --text:#1b1f26; --muted:#5b6472; --shadow:0 4px 16px rgba(20,23,28,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; background:var(--bg); color:var(--text);
+    transition:background .2s,color .2s;
+  }
+  header{
+    background:linear-gradient(120deg,#0f1216,#1b1f26 60%,#241a16);
+    border-bottom:3px solid var(--amber); padding:22px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  [data-theme="light"] header{ background:linear-gradient(120deg,#20242c,#2a2f38 60%,#3a2a20); }
+  header h1{ margin:0; font-size:20px; letter-spacing:.3px; color:#fff; }
+  header .sub{ color:#b7bdc7; font-size:12.5px; margin-top:3px; }
+  .hdr-actions{ display:flex; gap:10px; align-items:center; }
+  button{ font-family:inherit; cursor:pointer; }
+  .icon-btn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; width:38px; height:38px; font-size:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .btn{
+    background:var(--amber); color:#1b1206; border:none; border-radius:8px; padding:10px 16px; font-weight:600; font-size:13.5px;
+  }
+  .btn.secondary{ background:var(--panel2); color:var(--text); border:1px solid var(--border); }
+  .btn.danger{ background:var(--red); color:#fff; }
+  main{ max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+  .tabs{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab{
+    background:var(--panel); border:1px solid var(--border); color:var(--muted); padding:9px 16px; border-radius:999px;
+    font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;
+  }
+  .tab.active{ background:var(--amber); color:#1b1206; border-color:var(--amber); }
+  .tab .count{ background:rgba(0,0,0,.18); border-radius:999px; padding:1px 8px; font-size:11.5px; }
+  .tab.active .count{ background:rgba(0,0,0,.25); }
+  .toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .search{
+    flex:1; min-width:200px; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:10px 14px; font-size:13.5px;
+  }
+  .search:focus{ outline:none; border-color:var(--amber); }
+  #status{ font-size:12.5px; color:var(--muted); margin-bottom:14px; min-height:16px; }
+  .section{ margin-bottom:30px; }
+  .section-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-left:2px; }
+  .section-dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .section-head h2{ margin:0; font-size:16px; letter-spacing:.2px; }
+  .section-head .count{ font-size:11.5px; color:var(--muted); background:var(--panel2); padding:3px 10px; border-radius:999px; border:1px solid var(--border); }
+  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+  .badge-tipo{ font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; letter-spacing:.4px; }
+  .badge-tipo.V1{ background:rgba(230,72,60,.16); color:var(--red); }
+  .badge-tipo.V2{ background:rgba(255,176,32,.16); color:var(--amber); }
+  .case-card{
+    background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--accent,var(--amber));
+    border-radius:12px; padding:15px 16px; box-shadow:var(--shadow); cursor:pointer;
+    transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+  }
+  .case-card:hover{ transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.4); }
+  [data-theme="light"] .case-card:hover{ box-shadow:0 10px 24px rgba(20,23,28,.14); }
+  .case-card .row-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; gap:8px; }
+  .row-top .badges{ display:flex; align-items:center; gap:6px; }
+  .badge-dias{ font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; letter-spacing:.3px; white-space:nowrap; }
+  .badge-dias.age-1{ background:rgba(255,214,10,.18); color:#ffd60a; }
+  .badge-dias.age-2{ background:rgba(255,140,66,.18); color:#ff8c42; }
+  .badge-dias.age-3{ background:rgba(168,85,247,.18); color:#a855f7; }
+  .badge-dias.age-4{ background:rgba(239,68,68,.2); color:#ef4444; }
+  .case-card .os{ font-weight:700; font-size:14.5px; margin-bottom:4px; }
+  .case-card .data{ font-size:11.5px; color:var(--muted); }
+  .case-card .cliente{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
+  .case-card .veiculo{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .case-card .tecnico{ font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .case-card .snippet{
+    font-size:12px; color:var(--muted); line-height:1.45; display:-webkit-box;
+    -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; border-top:1px dashed var(--border); padding-top:8px;
+  }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  @media(max-width:640px){ .grid2{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+  .field .val{ font-size:13.5px; line-height:1.5; white-space:pre-wrap; }
+  .field textarea, .field input, .field select{
+    width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:7px; padding:8px 10px; font-size:13.5px; font-family:inherit;
+  }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .actions-row{ display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+  .empty{ text-align:center; padding:50px 20px; color:var(--muted); }
+  .empty .big{ font-size:38px; margin-bottom:8px; }
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:16px; z-index:50;
+  }
+  .modal-bg.open{ display:flex; }
+  .modal{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:560px;
+    max-height:88vh; overflow:auto; box-shadow:var(--shadow);
+  }
+  .modal h2{ margin:0 0 16px; font-size:17px; }
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); padding:10px 18px; border-radius:8px; font-size:13px; box-shadow:var(--shadow); display:none; z-index:60;
+  }
+  .cfg-hint{
+    background:rgba(230,72,60,.1); border:1px solid var(--red); color:var(--text); border-radius:10px; padding:12px 16px; font-size:13px; margin-bottom:16px; line-height:1.5;
+  }
+  .cfg-hint code{ background:rgba(0,0,0,.25); padding:1px 6px; border-radius:4px; }
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; font-size:12px; color:var(--muted); }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+  @media (max-width:600px){
+    header{ padding:16px; }
+    header h1{ font-size:17px; }
+    header .sub{ font-size:11.5px; }
+    main{ padding:14px 12px 50px; }
+    .card-grid{ grid-template-columns:1fr; }
+    .modal{ padding:16px; border-radius:12px; }
+    .actions-row{ flex-wrap:wrap; }
+    .actions-row button{ flex:1; min-width:120px; }
+    .legend{ gap:10px; font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🚨 Casos Críticos — Oficina Goiânia</h1>
+    <div class="sub">Acompanhamento de garantias, peças e ocorrências em aberto</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" id="themeToggle" title="Alternar tema">🌙</button>
+    <button class="btn" id="btnNovo">+ Novo caso</button>
+  </div>
+</header>
+
+<main>
+  <div id="cfgHint" class="cfg-hint" style="display:none">
+    Configure a URL do seu Apps Script Web App na constante <code>API_URL</code>, no início do arquivo HTML, antes de usar esta ferramenta. Veja as instruções de implantação enviadas junto com este arquivo.
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="legend">
+    <span><i style="background:var(--age1)"></i>1–5 dias</span>
+    <span><i style="background:var(--age2)"></i>6–15 dias</span>
+    <span><i style="background:var(--age3)"></i>16–30 dias</span>
+    <span><i style="background:var(--age4)"></i>Acima de 30 dias</span>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="Buscar por cliente, veículo, OS ou loja...">
+    <button class="btn secondary" id="btnRefresh">↻ Atualizar</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="list"></div>
+</main>
+
+<!-- Modal: novo caso (todos os campos) -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="modalTitle">Novo caso</h2>
+    <div class="grid2">
+      <div class="field"><label>Loja / GAC</label><input id="f_loja"></div>
+      <div class="field"><label>Número OS</label><input id="f_numero"></div>
+      <div class="field"><label>Tipo</label>
+        <select id="f_tipo"><option value="V1">V1</option><option value="V2">V2</option></select>
+      </div>
+      <div class="field"><label>Data</label><input type="date" id="f_data"></div>
+      <div class="field" style="grid-column:1/-1"><label>Cliente</label><input id="f_cliente"></div>
+      <div class="field" style="grid-column:1/-1"><label>Veículo</label><input id="f_veiculo"></div>
+      <div class="field" style="grid-column:1/-1"><label>Atendimento Técnico</label><textarea id="f_atendimento"></textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Peças / Observações</label><textarea id="f_pecas"></textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Anotações Importantes</label><textarea id="f_anotacoes"></textarea></div>
+    </div>
+    <div class="actions-row">
+      <button class="btn secondary" id="btnCancelar">Cancelar</button>
+      <button class="btn" id="btnSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: acompanhamento (só Peças/Observações e Anotações Importantes) -->
+<div class="modal-bg" id="modalBgUpd">
+  <div class="modal">
+    <h2 id="modalTitleUpd">Atualizar acompanhamento</h2>
+    <div class="field" style="margin-bottom:6px;">
+      <label>Dados do caso (fixos)</label>
+      <div class="val" id="updRefInfo" style="color:var(--muted); font-size:12.5px;"></div>
+    </div>
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>Peças / Observações</label><textarea id="u_pecas" style="min-height:100px;"></textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Anotações Importantes</label><textarea id="u_anotacoes" style="min-height:100px;"></textarea></div>
+    </div>
+    <div class="actions-row">
+      <button class="btn secondary" id="btnCancelarUpd">Cancelar</button>
+      <button class="btn" id="btnSalvarUpd">Salvar acompanhamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: detalhe do caso (abre ao clicar no card) -->
+<div class="modal-bg" id="modalBgView">
+  <div class="modal">
+    <h2 id="viewTitle">OS</h2>
+    <div class="grid2">
+      <div class="field"><label>Loja</label><div class="val" id="v_loja"></div></div>
+      <div class="field"><label>Tipo</label><div class="val" id="v_tipo"></div></div>
+      <div class="field"><label>Data</label><div class="val" id="v_data"></div></div>
+      <div class="field"><label>Tempo em caso crítico</label><div class="val" id="v_dias"></div></div>
+      <div class="field"><label>Cliente</label><div class="val" id="v_cliente"></div></div>
+      <div class="field" style="grid-column:1/-1"><label>Veículo</label><div class="val" id="v_veiculo"></div></div>
+      <div class="field" style="grid-column:1/-1"><label>Atendimento Técnico</label><div class="val" id="v_atendimento"></div></div>
+      <div class="field" style="grid-column:1/-1"><label>Peças / Observações</label><div class="val" id="v_pecas"></div></div>
+      <div class="field" style="grid-column:1/-1"><label>Anotações Importantes</label><div class="val" id="v_anotacoes"></div></div>
+    </div>
+    <div class="actions-row">
+      <button class="btn danger" id="btnExcluirView">Excluir</button>
+      <button class="btn secondary" id="btnFecharView">Fechar</button>
+      <button class="btn" id="btnAtualizarView">Atualizar acompanhamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== CONFIGURAÇÃO =====================
+// Cole aqui a URL do seu Web App do Apps Script (termina em /exec)
+const API_URL = "https://script.google.com/macros/s/AKfycbwnvkEJSlOh_Uka3YcgsVkDOmzATRQWH0CEJ_rHksz8ytDI1t7RWHjIFx8joNEqyHfjFQ/exec";
+// ==========================================================
+
+const MESES = ["Abr'26","Mai'26","Jun'26","Jul'26"];
+const MES_LABEL = {"Abr'26":"Abril/26", "Mai'26":"Maio/26", "Jun'26":"Junho/26", "Jul'26":"Julho/26"};
+
+let currentMes = MESES[MESES.length-1];
+let cache = {};       // mes -> array de casos
+let editingRow = null; // linha em edição inline
+let modalMode = "novo";
+
+const $ = (id) => document.getElementById(id);
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.style.display="none", 2600);
+}
+
+function setStatus(msg){ $("status").textContent = msg; }
+
+// ---------- Tema ----------
+function initTheme(){
+  const saved = document.cookie.match(/theme=(dark|light)/);
+  const theme = saved ? saved[1] : "dark";
+  document.documentElement.setAttribute("data-theme", theme);
+  $("themeToggle").textContent = theme === "dark" ? "🌙" : "☀️";
+}
+$("themeToggle").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  document.cookie = `theme=${next};max-age=31536000;path=/`;
+  $("themeToggle").textContent = next === "dark" ? "🌙" : "☀️";
+};
+
+// ---------- Tabs ----------
+function renderTabs(){
+  const tabs = $("tabs");
+  tabs.innerHTML = "";
+  MESES.forEach(m => {
+    const el = document.createElement("div");
+    el.className = "tab" + (m === currentMes ? " active" : "");
+    const count = cache[m] ? cache[m].length : "…";
+    el.innerHTML = `${MES_LABEL[m]} <span class="count">${count}</span>`;
+    el.onclick = () => { currentMes = m; renderTabs(); loadMes(m); };
+    tabs.appendChild(el);
+  });
+}
+
+// ---------- API ----------
+async function apiGet(mes){
+  const res = await fetch(`${API_URL}?mes=${mes}`);
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "Erro ao carregar");
+  return j.casos;
+}
+async function apiPost(payload){
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "Erro ao salvar");
+  return j;
+}
+
+async function loadMes(mes){
+  if (!API_URL || API_URL.includes("COLE_AQUI")){
+    $("cfgHint").style.display = "block";
+    return;
+  }
+  setStatus("Carregando...");
+  $("list").innerHTML = "";
+  try{
+    const casos = await apiGet(mes);
+    casos.forEach(c => { c.data = dateOnly(c.data); });
+    cache[mes] = casos;
+    renderTabs();
+    renderList();
+    setStatus(`${casos.length} caso(s) em ${MES_LABEL[mes]}`);
+  }catch(err){
+    setStatus("Erro ao carregar: " + err.message);
+  }
+}
+
+// ---------- Lista agrupada por loja ----------
+const STORE_INFO = {
+  LAGO:   { label: "Lago",    color: "#2dd4bf" },
+  PIOXII: { label: "Pio XII", color: "#8b7cf6" },
+  OUTROS: { label: "Outros",  color: "#8b93a1" }
+};
+
+function groupByLoja(items){
+  const buckets = { LAGO: [], PIOXII: [], OUTROS: [] };
+  items.forEach(c => {
+    const key = (c.loja || "").trim().toUpperCase();
+    if (key.includes("LAGO")) buckets.LAGO.push(c);
+    else if (key.includes("PIO")) buckets.PIOXII.push(c);
+    else buckets.OUTROS.push(c);
+  });
+  return ["LAGO","PIOXII","OUTROS"]
+    .map(key => ({ key, ...STORE_INFO[key], items: buckets[key] }))
+    .filter(g => g.items.length > 0);
+}
+
+function renderList(){
+  const term = $("search").value.trim().toLowerCase();
+  const all = (cache[currentMes] || []).filter(c => {
+    if (!term) return true;
+    return [c.loja,c.numero,c.cliente,c.veiculo,c.atendimento].join(" ").toLowerCase().includes(term);
+  });
+
+  const list = $("list");
+  list.innerHTML = "";
+
+  if (all.length === 0){
+    list.innerHTML = `<div class="empty"><div class="big">🗂️</div>Nenhum caso encontrado para este mês.</div>`;
+    return;
+  }
+
+  groupByLoja(all).forEach(g => {
+    const section = document.createElement("div");
+    section.className = "section";
+    section.innerHTML = `
+      <div class="section-head">
+        <span class="section-dot" style="background:${g.color}"></span>
+        <h2>${g.label}</h2>
+        <span class="count">${g.items.length} caso(s)</span>
+      </div>
+      <div class="card-grid"></div>
+    `;
+    const grid = section.querySelector(".card-grid");
+    g.items
+      .sort((a,b) => (daysSince(b.data) ?? -9999) - (daysSince(a.data) ?? -9999))
+      .forEach(c => grid.appendChild(buildCaseCard(c)));
+    list.appendChild(section);
+  });
+}
+
+function buildCaseCard(c){
+  const card = document.createElement("div");
+  card.className = "case-card";
+  const days = daysSince(c.data);
+  const tier = ageTier(days);
+  card.style.setProperty("--accent", tier.color);
+  const dataFmt = c.data ? c.data.split("-").reverse().join("/") : "—";
+  const snippet = (c.pecas || c.anotacoes || "").trim() || "Sem observações registradas.";
+
+  card.innerHTML = `
+    <div class="row-top">
+      <div class="badges">
+        <span class="badge-tipo ${c.tipo || ''}">${c.tipo || '—'}</span>
+        <span class="badge-dias ${tier.cls}">${tier.label}</span>
+      </div>
+      <span class="data">${dataFmt}</span>
+    </div>
+    <div class="os">OS ${c.numero || '—'}</div>
+    <div class="cliente">${escapeHtml(c.cliente) || '—'}</div>
+    <div class="veiculo">${escapeHtml(c.veiculo) || 'Veículo não informado'}</div>
+    ${c.atendimento ? `<div class="tecnico">🔧 ${escapeHtml(c.atendimento)}</div>` : ''}
+    <div class="snippet">${escapeHtml(snippet)}</div>
+  `;
+  card.onclick = () => openModalView(c);
+  return card;
+}
+
+function escapeHtml(s){
+  if (s === undefined || s === null) return "";
+  return String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+}
+function dateOnly(s){
+  if (!s) return "";
+  return String(s).split("T")[0];
+}
+
+// ---------- Tempo em caso crítico ----------
+function daysSince(dateStr){
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d)) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return Math.round((today - d) / 86400000);
+}
+function ageTier(days){
+  if (days === null) return { cls:"", color:"var(--muted)", label:"—" };
+  const d = Math.max(days, 0);
+  if (d <= 5)  return { cls:"age-1", color:"var(--age1)", label:(d===0?"Hoje":d+" dia"+(d>1?"s":"")) };
+  if (d <= 15) return { cls:"age-2", color:"var(--age2)", label:d+" dias" };
+  if (d <= 30) return { cls:"age-3", color:"var(--age3)", label:d+" dias" };
+  return { cls:"age-4", color:"var(--age4)", label:d+" dias" };
+}
+
+// ---------- Modal (novo / editar) ----------
+function openModalNovo(){
+  modalMode = "novo"; editingRow = null;
+  $("modalTitle").textContent = "Novo caso — " + MES_LABEL[currentMes];
+  ["loja","numero","cliente","veiculo","atendimento","pecas","anotacoes"].forEach(k => $("f_"+k).value = "");
+  $("f_tipo").value = "V1";
+  $("f_data").value = new Date().toISOString().slice(0,10);
+  $("modalBg").classList.add("open");
+}
+function openModalEdit(c){
+  modalMode = "editar"; editingRow = c.row;
+  $("modalTitle").textContent = "Editar caso — OS " + c.numero;
+  $("f_loja").value = c.loja || "";
+  $("f_numero").value = c.numero || "";
+  $("f_tipo").value = c.tipo || "V1";
+  $("f_data").value = c.data || "";
+  $("f_cliente").value = c.cliente || "";
+  $("f_veiculo").value = c.veiculo || "";
+  $("f_atendimento").value = c.atendimento || "";
+  $("f_pecas").value = c.pecas || "";
+  $("f_anotacoes").value = c.anotacoes || "";
+  $("modalBg").classList.add("open");
+}
+function closeModal(){ $("modalBg").classList.remove("open"); }
+
+// Modal de detalhe (abre ao clicar no card)
+let viewingCase = null;
+function openModalView(c){
+  viewingCase = c;
+  const dataFmt = c.data ? c.data.split("-").reverse().join("/") : "—";
+  $("viewTitle").textContent = "OS " + (c.numero || "—");
+  $("v_loja").textContent = c.loja || "—";
+  $("v_tipo").textContent = c.tipo || "—";
+  $("v_data").textContent = dataFmt;
+  const tier = ageTier(daysSince(c.data));
+  const vd = $("v_dias");
+  vd.textContent = tier.label;
+  vd.style.color = tier.color;
+  vd.style.fontWeight = "700";
+  $("v_cliente").textContent = c.cliente || "—";
+  $("v_veiculo").textContent = c.veiculo || "—";
+  $("v_atendimento").textContent = c.atendimento || "—";
+  $("v_pecas").textContent = c.pecas || "—";
+  $("v_anotacoes").textContent = c.anotacoes || "—";
+  $("modalBgView").classList.add("open");
+}
+function closeModalView(){ $("modalBgView").classList.remove("open"); viewingCase = null; }
+$("btnFecharView").onclick = closeModalView;
+$("modalBgView").onclick = (e) => { if (e.target.id === "modalBgView") closeModalView(); };
+$("btnAtualizarView").onclick = () => {
+  const c = viewingCase;
+  closeModalView();
+  openModalUpd(c);
+};
+$("btnExcluirView").onclick = async () => {
+  if (!viewingCase) return;
+  const c = viewingCase;
+  if (!confirm(`Excluir o caso OS ${c.numero}? Esta ação não pode ser desfeita.`)) return;
+  try{
+    await apiPost({ action:"delete", mes: currentMes, row: c.row });
+    toast("Caso excluído");
+    closeModalView();
+    loadMes(currentMes);
+  }catch(err){ toast("Erro: " + err.message); }
+};
+
+// Modal de acompanhamento (edição restrita a Peças/Observações e Anotações)
+function openModalUpd(c){
+  editingRow = c.row;
+  const dataFmt = c.data ? c.data.split("-").reverse().join("/") : "—";
+  $("modalTitleUpd").textContent = "Atualizar acompanhamento — OS " + c.numero;
+  $("updRefInfo").textContent = `${c.loja || '—'} · ${c.tipo || '—'} · ${dataFmt} · ${c.cliente || '—'} · ${c.veiculo || '—'}`;
+  $("u_pecas").value = c.pecas || "";
+  $("u_anotacoes").value = c.anotacoes || "";
+  $("modalBgUpd").classList.add("open");
+}
+function closeModalUpd(){ $("modalBgUpd").classList.remove("open"); }
+
+$("btnCancelarUpd").onclick = closeModalUpd;
+$("modalBgUpd").onclick = (e) => { if (e.target.id === "modalBgUpd") closeModalUpd(); };
+
+$("btnSalvarUpd").onclick = async () => {
+  const found = (cache[currentMes] || []).find(c => c.row === editingRow);
+  if (!found){ toast("Caso não encontrado, atualize a lista"); return; }
+  const data = {
+    loja: found.loja, numero: found.numero, tipo: found.tipo, data: found.data,
+    cliente: found.cliente, veiculo: found.veiculo, atendimento: found.atendimento,
+    pecas: $("u_pecas").value.trim(),
+    anotacoes: $("u_anotacoes").value.trim()
+  };
+  $("btnSalvarUpd").disabled = true;
+  try{
+    await apiPost({ action:"update", mes: currentMes, row: editingRow, data });
+    toast("Acompanhamento atualizado");
+    closeModalUpd();
+    loadMes(currentMes);
+  }catch(err){
+    toast("Erro: " + err.message);
+  }finally{
+    $("btnSalvarUpd").disabled = false;
+  }
+};
+
+$("btnNovo").onclick = openModalNovo;
+$("btnCancelar").onclick = closeModal;
+$("modalBg").onclick = (e) => { if (e.target.id === "modalBg") closeModal(); };
+
+$("btnSalvar").onclick = async () => {
+  const data = {
+    loja: $("f_loja").value.trim(),
+    numero: $("f_numero").value.trim(),
+    tipo: $("f_tipo").value,
+    data: $("f_data").value,
+    cliente: $("f_cliente").value.trim(),
+    veiculo: $("f_veiculo").value.trim(),
+    atendimento: $("f_atendimento").value.trim(),
+    pecas: $("f_pecas").value.trim(),
+    anotacoes: $("f_anotacoes").value.trim()
+  };
+  if (!data.numero){ toast("Informe o número da OS"); return; }
+
+  $("btnSalvar").disabled = true;
+  try{
+    if (modalMode === "novo"){
+      await apiPost({ action:"add", mes: currentMes, data });
+      toast("Caso adicionado");
+    } else {
+      await apiPost({ action:"update", mes: currentMes, row: editingRow, data });
+      toast("Caso atualizado");
+    }
+    closeModal();
+    loadMes(currentMes);
+  }catch(err){
+    toast("Erro: " + err.message);
+  }finally{
+    $("btnSalvar").disabled = false;
+  }
+};
+
+$("btnRefresh").onclick = () => loadMes(currentMes);
+$("search").oninput = renderList;
+
+// ---------- Init ----------
+initTheme();
+renderTabs();
+loadMes(currentMes);
+</script>
+</body>
+</html>
