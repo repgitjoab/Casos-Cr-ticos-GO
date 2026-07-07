@@ -64,10 +64,24 @@
   .badge-tipo.V1{ background:rgba(230,72,60,.16); color:var(--red); }
   .badge-tipo.V2{ background:rgba(255,176,32,.16); color:var(--amber); }
   .case-card{
-    background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--accent,var(--amber));
+    position:relative; background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--accent,var(--amber));
     border-radius:12px; padding:15px 16px; box-shadow:var(--shadow); cursor:pointer;
-    transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+    transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease, opacity .14s ease;
   }
+  .case-card.resolvido{ border-left-color:var(--green); background:rgba(63,174,106,.08); opacity:.88; }
+  .check-btn{
+    position:absolute; top:12px; right:12px; width:26px; height:26px; border-radius:50%;
+    border:1px solid var(--border); background:var(--panel2); color:var(--muted); font-size:13px; line-height:1;
+    display:flex; align-items:center; justify-content:center; z-index:2;
+  }
+  .check-btn:hover{ border-color:var(--green); color:var(--green); }
+  .case-card.resolvido .check-btn{ background:var(--green); border-color:var(--green); color:#fff; }
+  .badge-resolvido{ font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; letter-spacing:.3px; background:rgba(63,174,106,.18); color:var(--green); white-space:nowrap; }
+  .block{ margin-bottom:8px; }
+  .block-head{ display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .block-head h3{ margin:0; font-size:14px; letter-spacing:.3px; color:var(--muted); text-transform:uppercase; }
+  .block-head .count{ font-size:11px; color:var(--muted); background:var(--panel2); padding:2px 9px; border-radius:999px; border:1px solid var(--border); }
+  .block-toggle{ margin-left:auto; color:var(--muted); font-size:13px; }
   .case-card:hover{ transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.4); }
   [data-theme="light"] .case-card:hover{ box-shadow:0 10px 24px rgba(20,23,28,.14); }
   .case-card .row-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; gap:8px; }
@@ -229,6 +243,7 @@
     <div class="actions-row">
       <button class="btn danger" id="btnExcluirView">Excluir</button>
       <button class="btn secondary" id="btnFecharView">Fechar</button>
+      <button class="btn secondary" id="btnResolverView">Marcar como Resolvido</button>
       <button class="btn" id="btnAtualizarView">Atualizar acompanhamento</button>
     </div>
   </div>
@@ -328,6 +343,25 @@ async function loadMes(mes){
   }
 }
 
+// ---------- Status "Resolvido" (guardado só neste navegador) ----------
+function resolvedKey(mes){ return "cc_resolvido_" + mes; }
+function getResolvedSet(mes){
+  try{
+    const raw = localStorage.getItem(resolvedKey(mes));
+    return new Set(raw ? JSON.parse(raw) : []);
+  }catch(err){ return new Set(); }
+}
+function saveResolvedSet(mes, set){
+  try{ localStorage.setItem(resolvedKey(mes), JSON.stringify(Array.from(set))); }catch(err){}
+}
+function isResolved(mes, c){ return getResolvedSet(mes).has(String(c.numero)); }
+function toggleResolved(mes, c){
+  const set = getResolvedSet(mes);
+  const key = String(c.numero);
+  if (set.has(key)) set.delete(key); else set.add(key);
+  saveResolvedSet(mes, set);
+}
+
 // ---------- Lista agrupada por loja ----------
 const STORE_INFO = {
   LAGO:   { label: "Lago",    color: "#2dd4bf" },
@@ -363,39 +397,76 @@ function renderList(){
     return;
   }
 
-  groupByLoja(all).forEach(g => {
-    const section = document.createElement("div");
-    section.className = "section";
-    section.innerHTML = `
-      <div class="section-head">
-        <span class="section-dot" style="background:${g.color}"></span>
-        <h2>${g.label}</h2>
-        <span class="count">${g.items.length} caso(s)</span>
-      </div>
-      <div class="card-grid"></div>
-    `;
-    const grid = section.querySelector(".card-grid");
-    g.items
-      .sort((a,b) => (daysSince(b.data) ?? -9999) - (daysSince(a.data) ?? -9999))
-      .forEach(c => grid.appendChild(buildCaseCard(c)));
-    list.appendChild(section);
-  });
+  const resolvedSet = getResolvedSet(currentMes);
+  const pendentes = all.filter(c => !resolvedSet.has(String(c.numero)));
+  const resolvidos = all.filter(c => resolvedSet.has(String(c.numero)));
+
+  list.appendChild(buildBlock("🟡 Em aberto", pendentes, false));
+  if (resolvidos.length){
+    list.appendChild(buildBlock("✅ Resolvidos", resolvidos, true));
+  }
+}
+
+function buildBlock(title, items, collapsedByDefault){
+  const wrap = document.createElement("div");
+  wrap.className = "block";
+
+  const head = document.createElement("div");
+  head.className = "block-head";
+  head.innerHTML = `<h3>${title}</h3><span class="count">${items.length}</span><span class="block-toggle">${collapsedByDefault ? "▸ mostrar" : "▾ ocultar"}</span>`;
+
+  const body = document.createElement("div");
+  if (collapsedByDefault) body.style.display = "none";
+
+  head.onclick = () => {
+    const isOpen = body.style.display !== "none";
+    body.style.display = isOpen ? "none" : "";
+    head.querySelector(".block-toggle").textContent = isOpen ? "▸ mostrar" : "▾ ocultar";
+  };
+
+  if (items.length === 0){
+    body.innerHTML = `<div class="empty" style="padding:24px;">Nenhum caso aqui.</div>`;
+  } else {
+    groupByLoja(items).forEach(g => {
+      const section = document.createElement("div");
+      section.className = "section";
+      section.innerHTML = `
+        <div class="section-head">
+          <span class="section-dot" style="background:${g.color}"></span>
+          <h2>${g.label}</h2>
+          <span class="count">${g.items.length} caso(s)</span>
+        </div>
+        <div class="card-grid"></div>
+      `;
+      const grid = section.querySelector(".card-grid");
+      g.items
+        .sort((a,b) => (daysSince(b.data) ?? -9999) - (daysSince(a.data) ?? -9999))
+        .forEach(c => grid.appendChild(buildCaseCard(c)));
+      body.appendChild(section);
+    });
+  }
+
+  wrap.appendChild(head);
+  wrap.appendChild(body);
+  return wrap;
 }
 
 function buildCaseCard(c){
   const card = document.createElement("div");
-  card.className = "case-card";
+  const resolved = isResolved(currentMes, c);
+  card.className = "case-card" + (resolved ? " resolvido" : "");
   const days = daysSince(c.data);
   const tier = ageTier(days);
-  card.style.setProperty("--accent", tier.color);
+  card.style.setProperty("--accent", resolved ? "var(--green)" : tier.color);
   const dataFmt = c.data ? c.data.split("-").reverse().join("/") : "—";
   const snippet = (c.pecas || c.anotacoes || "").trim() || "Sem observações registradas.";
 
   card.innerHTML = `
+    <button class="check-btn" title="${resolved ? 'Reabrir caso' : 'Marcar como resolvido'}">${resolved ? '✓' : '○'}</button>
     <div class="row-top">
       <div class="badges">
         <span class="badge-tipo ${c.tipo || ''}">${c.tipo || '—'}</span>
-        <span class="badge-dias ${tier.cls}">${tier.label}</span>
+        ${resolved ? `<span class="badge-resolvido">Resolvido</span>` : `<span class="badge-dias ${tier.cls}">${tier.label}</span>`}
       </div>
       <span class="data">${dataFmt}</span>
     </div>
@@ -405,6 +476,11 @@ function buildCaseCard(c){
     ${c.atendimento ? `<div class="tecnico">🔧 ${escapeHtml(c.atendimento)}</div>` : ''}
     <div class="snippet">${escapeHtml(snippet)}</div>
   `;
+  card.querySelector(".check-btn").onclick = (e) => {
+    e.stopPropagation();
+    toggleResolved(currentMes, c);
+    renderList();
+  };
   card.onclick = () => openModalView(c);
   return card;
 }
@@ -480,11 +556,19 @@ function openModalView(c){
   $("v_atendimento").textContent = c.atendimento || "—";
   $("v_pecas").textContent = c.pecas || "—";
   $("v_anotacoes").textContent = c.anotacoes || "—";
+  const resolved = isResolved(currentMes, c);
+  $("btnResolverView").textContent = resolved ? "Reabrir caso" : "Marcar como Resolvido";
   $("modalBgView").classList.add("open");
 }
 function closeModalView(){ $("modalBgView").classList.remove("open"); viewingCase = null; }
 $("btnFecharView").onclick = closeModalView;
 $("modalBgView").onclick = (e) => { if (e.target.id === "modalBgView") closeModalView(); };
+$("btnResolverView").onclick = () => {
+  if (!viewingCase) return;
+  toggleResolved(currentMes, viewingCase);
+  closeModalView();
+  renderList();
+};
 $("btnAtualizarView").onclick = () => {
   const c = viewingCase;
   closeModalView();
